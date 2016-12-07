@@ -9,6 +9,7 @@ import org.jboss.reddeer.common.wait.TimePeriod;
 import org.jboss.reddeer.common.wait.WaitUntil;
 import org.jboss.reddeer.common.wait.WaitWhile;
 import org.jboss.reddeer.core.condition.JobIsRunning;
+import org.jboss.reddeer.core.condition.ShellWithTextIsAvailable;
 import org.jboss.reddeer.core.matcher.WithMnemonicTextMatcher;
 import org.jboss.reddeer.eclipse.condition.ConsoleHasText;
 import org.jboss.reddeer.eclipse.condition.ServerExists;
@@ -25,6 +26,7 @@ import org.jboss.reddeer.eclipse.wst.server.ui.wizard.ModifyModulesPage;
 import org.jboss.reddeer.swt.impl.button.PushButton;
 import org.jboss.reddeer.swt.impl.menu.ShellMenu;
 import org.jboss.reddeer.swt.impl.shell.DefaultShell;
+import org.jboss.reddeer.workbench.impl.shell.WorkbenchShell;
 import org.jboss.tools.common.reddeer.label.IDELabel;
 
 /**
@@ -97,13 +99,39 @@ public class ServersViewHelper {
 				
 				new WaitWhile(new JobIsRunning(), TimePeriod.NORMAL, false);
 				serversView.activate();
-				module.remove();
-
+				/*
+					FIX								 
+					BEFORE:
+					module.remove();				
+				 
+					NOW:
+				 */
+				tempRemoveMethod(module, serversView);
+				/*
+					FIX END
+				 */
+				
+				
 				if (moduleState.equals(ServerState.STARTED)) {
 					new WaitUntil(new ConsoleHasText("Undeployed \"" + moduleName), TimePeriod.LONG, false);
 				}
 			}
 		}
+	}
+	
+	private static void tempRemoveMethod(ServerModule module, ServersView serversView){
+		//activate();
+		serversView.activate();
+		
+		LOGGER.info("Remove server module with name '" + module.getLabel().getName() + "'");
+		final String workbenchTitle = new WorkbenchShell().getText();
+		new ShellMenu("Edit", "Delete").select();
+		new WaitUntil(new ShellWithTextIsAvailable("Server"));
+		new DefaultShell("Server");
+		new PushButton("OK").click();
+		new WaitWhile(new ShellWithTextIsAvailable("Server"));
+		new WaitWhile(new JobIsRunning());
+		//treeItem = null;
 	}
 
 	/**
