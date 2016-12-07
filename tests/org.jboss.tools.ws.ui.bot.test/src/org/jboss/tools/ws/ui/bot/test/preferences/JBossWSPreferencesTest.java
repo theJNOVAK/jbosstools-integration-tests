@@ -14,6 +14,14 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 import org.hamcrest.core.Is;
 import org.jboss.ide.eclipse.as.reddeer.server.requirement.ServerRequirement;
 import org.jboss.ide.eclipse.as.reddeer.server.requirement.ServerRequirement.JBossServer;
@@ -132,28 +140,34 @@ public class JBossWSPreferencesTest {
 			
 		String runtimeVersion = jbossWsRuntimeDialog.getRuntimeVersion();
 
-		String expectedVersion;
+		List<String> expectedVersions = new ArrayList<>();
 		IServerFamily serverFamily = serverReq.getConfig().getServerFamily();
 		switch(serverFamily.getLabel()) {
 		case "WildFly":
 			if ("10.x".equals(serverFamily.getVersion())) {
-				expectedVersion = "5.1.3.Final";
+				expectedVersions.add("5.1.3.Final"); // 10.0
+				expectedVersions.add("5.1.5.Final"); // 10.1
 			} else {
-				expectedVersion = "5.0.0.Final";
+				expectedVersions.add("5.0.0.Final");
 			}
 			break;
 		case "JBoss Enterprise Application Platform":
-			expectedVersion = "4.2.3.Final-redhat-1";
+			expectedVersions.add("4.2.3.Final-redhat-1");
 			break;
 		case "JBoss AS":
-			expectedVersion = "4.0.2.GA";
+			expectedVersions.add("4.0.2.GA");
 			break;
 		default:
 			fail("Server was not recognized");
-			expectedVersion = "";
 		}
-		assertTrue("Unknown runtime version: " + runtimeVersion, 
-				Is.is(expectedVersion).matches(runtimeVersion));
+		assertRuntimeVersion(expectedVersions, runtimeVersion);		
+	}
+	
+	private void assertRuntimeVersion(List<String> expectedVersions, String runtimeVersion) {
+		if (!expectedVersions.contains(runtimeVersion)){
+			fail("Unknown runtime version: " + runtimeVersion +
+				" Expected one of " + Arrays.toString(expectedVersions.toArray()));				
+		}
 	}
 
 	private void assertRuntimeConfiguredAccordingToRuntime() {
