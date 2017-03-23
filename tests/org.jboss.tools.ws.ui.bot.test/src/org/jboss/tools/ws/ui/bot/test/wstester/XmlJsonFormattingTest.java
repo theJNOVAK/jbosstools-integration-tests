@@ -15,8 +15,18 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.hamcrest.core.IsEqual;
 import org.jboss.ide.eclipse.as.reddeer.server.requirement.ServerRequirement.JBossServer;
+import org.jboss.reddeer.common.wait.WaitUntil;
+import org.jboss.reddeer.core.condition.ShellWithTextIsAvailable;
+import org.jboss.reddeer.eclipse.jdt.ui.ProjectExplorer;
 import org.jboss.reddeer.junit.runner.RedDeerSuite;
 import org.jboss.reddeer.requirements.server.ServerReqState;
+import org.jboss.reddeer.swt.api.TableItem;
+import org.jboss.reddeer.swt.impl.button.OkButton;
+import org.jboss.reddeer.swt.impl.button.PushButton;
+import org.jboss.reddeer.swt.impl.menu.ContextMenu;
+import org.jboss.reddeer.swt.impl.shell.DefaultShell;
+import org.jboss.reddeer.swt.impl.table.DefaultTable;
+import org.jboss.reddeer.swt.impl.tree.DefaultTreeItem;
 import org.jboss.tools.ws.reddeer.jaxrs.core.RESTfulWebService;
 import org.jboss.tools.ws.reddeer.jaxrs.core.RESTfulWebServicesNode;
 import org.jboss.tools.ws.reddeer.ui.tester.views.WsTesterView;
@@ -34,28 +44,29 @@ public class XmlJsonFormattingTest extends RESTfulTestBase {
 	private WsTesterView wsTesterView;
 
 	private static final String LINE_SEPARATOR = System.getProperty("line.separator", "\n");
-	
-	private final static String XML_RESPONSE_FORMAT = 
+
+	private final static String XML_RESPONSE_FORMAT =
 			"<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + LINE_SEPARATOR +
 			"<collection>" + LINE_SEPARATOR + "    <user>" + LINE_SEPARATOR + "        <id>1</id>" + LINE_SEPARATOR + "        " +
 			"<name>James</name>" + LINE_SEPARATOR + "        <phoneNumber>6545646</phoneNumber>" +
 			"" + LINE_SEPARATOR + "    </user>" + LINE_SEPARATOR + "    <user>" + LINE_SEPARATOR + "        <id>2</id>" + LINE_SEPARATOR + "        " +
 			"<name>John</name>" + LINE_SEPARATOR + "        <phoneNumber>8546544</phoneNumber>" + LINE_SEPARATOR + "    " +
 			"</user>" + LINE_SEPARATOR + "    <user>" + LINE_SEPARATOR + "        <id>3</id>" + LINE_SEPARATOR + "        <name>Paul</name>" +
-			"" + LINE_SEPARATOR + "        <phoneNumber>1287475</phoneNumber>" + LINE_SEPARATOR + "    </user>" + LINE_SEPARATOR + "</collection>" + LINE_SEPARATOR;	
+			"" + LINE_SEPARATOR + "        <phoneNumber>1287475</phoneNumber>" + LINE_SEPARATOR + "    </user>" + LINE_SEPARATOR + "</collection>" + LINE_SEPARATOR;
 
-	private final static String JSON_RESPONSE_FORMAT = 
+	private final static String JSON_RESPONSE_FORMAT =
 			"[\r\n{\r\n    \"id\":1,\r\n    \"name\":\"James\"," +
 			"\r\n    \"phoneNumber\":6545646\r\n},\r\n    {\r\n    " +
 			"\"id\":2,\r\n    \"name\":\"John\",\r\n    " +
 			"\"phoneNumber\":8546544\r\n},\r\n    {\r\n    \"id\":3,\r\n    " +
-			"\"name\":\"Paul\",\r\n    \"phoneNumber\":1287475\r\n}\r\n]";	
+			"\"name\":\"Paul\",\r\n    \"phoneNumber\":1287475\r\n}\r\n]";
 
 	@Override
 	public void setup() {
 		if (!projectExists(getWsProjectName())) {
 			importWSTestProject(getWsProjectName());
 		}
+		fixBuildersOrder();
 		ServersViewHelper.runProjectOnServer(getWsProjectName());
 		ServersViewHelper.waitForDeployment(getWsProjectName(), getConfiguredServerName());
 		wsTesterView = new WsTesterView();
@@ -85,6 +96,31 @@ public class XmlJsonFormattingTest extends RESTfulTestBase {
 		testWSTesterFormatting(Format.JSON);
 	}
 
+	private boolean buildersFixed = false;
+	private void fixBuildersOrder() {
+		if(!buildersFixed) {
+			String propertiesTitle = "Properties for " + getWsProjectName();
+			ProjectExplorer pe = new ProjectExplorer();
+			pe.getProject(getWsProjectName()).select();
+
+			new ContextMenu("Properties").select();
+			new WaitUntil(new ShellWithTextIsAvailable(propertiesTitle));
+			new DefaultShell(propertiesTitle);
+			new DefaultTreeItem("Builders").select();
+
+			TableItem item = new DefaultTable().getItem("JAX-RS Builder");
+			item.select();
+
+			PushButton upButton = new PushButton("Up");
+			upButton.click();
+			upButton.click();
+
+			new OkButton().click();
+			buildersFixed = true;
+			return;
+		}
+	}
+
 	private void testWSTesterFormatting(Format format) {
 		restWebServicesNode = new RESTfulWebServicesNode(getWsProjectName());
 
@@ -94,14 +130,14 @@ public class XmlJsonFormattingTest extends RESTfulTestBase {
 
 		invokeMethodInWSTester(wsTesterView, RequestType.GET);
 
-		assertThat(wsTesterView.getResponseBody(), 
+		assertThat(wsTesterView.getResponseBody(),
 				IsEqual.equalTo(format.formattedMessage));
 	}
 
-	private RESTfulWebService getProperRestService(RESTfulWebServicesNode restWebServicesNode, 
+	private RESTfulWebService getProperRestService(RESTfulWebServicesNode restWebServicesNode,
 			Format format) {
 		for (RESTfulWebService service : restWebServicesNode.getWebServices()) {
-			if (service.getPath().contains(format.formatType)) { 
+			if (service.getPath().contains(format.formatType)) {
 				return service;
 			}
 		}
