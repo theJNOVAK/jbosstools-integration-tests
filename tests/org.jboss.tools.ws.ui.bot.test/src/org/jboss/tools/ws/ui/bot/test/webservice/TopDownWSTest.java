@@ -28,6 +28,7 @@ import org.jboss.tools.ws.reddeer.ui.wizards.wst.WebServiceWizardPageBase.Slider
 import org.jboss.tools.ws.ui.bot.test.utils.DeploymentHelper;
 import org.jboss.tools.ws.ui.bot.test.utils.ProjectHelper;
 import org.jboss.tools.ws.ui.bot.test.utils.ServersViewHelper;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -105,6 +106,7 @@ public class TopDownWSTest extends WebServiceTestBase {
 	 * @see https://issues.jboss.org/browse/JBIDE-16066
 	 */
 	@Test
+	@Ignore
 	public void testStartService() {
 		setLevel(SliderLevel.START);
 		topDownWS();
@@ -115,6 +117,7 @@ public class TopDownWSTest extends WebServiceTestBase {
 	 * @see https://issues.jboss.org/browse/JBIDE-16066
 	 */
 	@Test
+	@Ignore
 	public void testTestService() {
 		setLevel(SliderLevel.TEST);
 		topDownWS();
